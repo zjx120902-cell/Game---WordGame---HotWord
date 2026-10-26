@@ -1,0 +1,17 @@
+{
+  "name": "hot-word",
+  "version": "1.0.0",
+  "description": "A daily semantic word-guessing game.",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "setup-model": "node scripts/setup-model.js",
+    "calibrate": "node scripts/calibrate.js",
+    "start": "node server/index.js",
+    "test": "node --test test/*.test.js",
+    "test:e2e": "node test/e2e.js"
+  }
+}

@@ -1,0 +1,23 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Builds the GloVe model during deploy (it is not stored in the repo).
+services:
+  - type: web
+    name: hot-word
+    runtime: node
+    plan: free
+    buildCommand: npm run setup-model
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PUZZLE_SECRET
+        generateValue: true   # random once, then kept across deploys; keeps the daily schedule stable
+      - key: STATS_KEY
+        generateValue: true   # password for the private stats page: /stats?key=<this value>
+      # Free Upstash Redis database that keeps stats across restarts (Render free files are temporary).
+      # Paste the values from the Upstash console ("REST API" section).
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false

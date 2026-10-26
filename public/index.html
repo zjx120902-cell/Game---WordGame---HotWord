@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#16181c" media="(prefers-color-scheme: dark)">
+  <meta name="description" content="Hot Word — one secret word, no clues. How close can you get?">
+  <title>Hot Word</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <div class="brand">
+        <h1>Hot Word</h1>
+        <span class="puzzle-no" id="puzzleNo" aria-label="Puzzle number"></span>
+      </div>
+      <button class="icon-btn" id="helpBtn" type="button" aria-label="How to play">?</button>
+    </header>
+
+    <p class="instruction">One secret word. No clues. How close can you get?</p>
+
+    <form class="guess-form" id="guessForm" autocomplete="off" novalidate>
+      <label class="sr-only" for="guessInput">Your guess</label>
+      <input id="guessInput" name="guess" type="text" inputmode="text" maxlength="40"
+             placeholder="Type a word" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go">
+      <button id="guessBtn" type="submit">Guess</button>
+    </form>
+
+    <div class="message" id="message" role="status" aria-live="polite"></div>
+
+    <section class="win" id="winPanel" hidden aria-live="polite">
+      <p class="win-title" id="winTitle"></p>
+      <p class="win-word" id="winWord"></p>
+      <button class="share-btn" id="shareBtn" type="button">Share result</button>
+      <p class="next">Next puzzle in <span class="countdown" data-countdown>--:--:--</span></p>
+    </section>
+
+    <section class="hint-offer" id="hintOffer" hidden aria-live="polite">
+      <p class="hint-title">Stuck? You can have a hint.</p>
+      <p class="hint-sub">We’ll reveal a word closer than your best guess. It counts as a guess. Totally optional.</p>
+      <div class="hint-actions">
+        <button type="button" class="hint-yes" id="hintYes">Show a hint</button>
+        <button type="button" class="hint-no" id="hintNo">No thanks</button>
+      </div>
+    </section>
+
+    <div class="stats" id="stats" hidden>
+      <span>Guesses <strong id="guessCount">0</strong></span>
+      <span>Best <strong id="bestScore">–</strong></span>
+      <button type="button" class="hint-link" id="hintBtn" hidden>Get a hint</button>
+    </div>
+
+    <section class="latest" id="latestWrap" hidden>
+      <h2 class="section-label">Latest</h2>
+      <ol class="guess-list" id="latestList"></ol>
+    </section>
+
+    <section class="history" id="historyWrap" hidden>
+      <h2 class="section-label">Closest first</h2>
+      <ol class="guess-list" id="guessList"></ol>
+    </section>
+
+    <footer class="foot" id="foot">
+      Next puzzle in <span class="countdown" data-countdown>--:--:--</span>
+    </footer>
+  </main>
+
+  <dialog id="helpDialog" aria-labelledby="helpTitle">
+    <form method="dialog" class="dialog-inner">
+      <h2 id="helpTitle">How to play</h2>
+      <p>There is one secret English word each day. You get no clues — not its length, first letter, or category.</p>
+      <p>Type any word. You'll see how close its <em>meaning</em> is to the secret word, from 0 to 100.</p>
+      <ul class="legend">
+        <li><span class="chip" style="--c:var(--t0)"></span><b>Freezing</b> 0–19 · unrelated</li>
+        <li><span class="chip" style="--c:var(--t1)"></span><b>Cold</b> 20–44</li>
+        <li><span class="chip" style="--c:var(--t2)"></span><b>Warm</b> 45–64</li>
+        <li><span class="chip" style="--c:var(--t3)"></span><b>Hot</b> 65–84</li>
+        <li><span class="chip" style="--c:var(--t4)"></span><b>Burning</b> 85–99 · very close</li>
+      </ul>
+      <p class="fine">The score measures semantic closeness from a language model — how often words appear in similar contexts. It isn't a probability or a dictionary rank, and opposites can score high (hot and cold are used in similar places). Only the exact word scores 100.</p>
+      <p class="fine">Unlimited guesses. After 50, you can ask for a hint — or keep going without one. A new word arrives every day at midnight UTC.</p>
+      <p class="fine">We count plays anonymously (a random ID kept on your device, no personal data) to improve the game.</p>
+      <button class="close-btn" value="close">Got it</button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
