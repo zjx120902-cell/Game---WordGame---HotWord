@@ -28,20 +28,48 @@ const MAX_WORDS = Number(process.env.VOCAB_SIZE || 80000);
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const WORD_RE = /^[a-z]+$/;
 
+// Returns the decompressed text stream plus a way to stop reading early.
+// Every stream gets an error handler: once we have enough words we abort the
+// download on purpose, and that abort must not crash the process.
 async function openSource(localPath) {
+  const state = { finished: false, error: null };
+  const track = (stream) => {
+    stream.on('error', (err) => {
+      if (!state.finished && !state.error) state.error = err;
+    });
+    return stream;
+  };
+
   if (localPath) {
     console.log(`Reading local file ${localPath}`);
-    const raw = fs.createReadStream(localPath);
-    return localPath.endsWith('.gz') ? raw.pipe(zlib.createGunzip()) : raw;
+    const raw = track(fs.createReadStream(localPath));
+    const input = localPath.endsWith('.gz') ? track(raw.pipe(zlib.createGunzip())) : raw;
+    raw.on('error', (err) => input !== raw && input.destroy(err));
+    return { input, state, stop: () => raw.destroy() };
   }
+
   console.log(`Downloading ${SOURCE_URL}\n(about 130 MB; this may take a minute)`);
-  const res = await fetch(SOURCE_URL);
+  const controller = new AbortController();
+  const res = await fetch(SOURCE_URL, { signal: controller.signal });
   if (!res.ok) throw new Error(`Download failed: HTTP ${res.status}`);
-  return Readable.fromWeb(res.body).pipe(zlib.createGunzip());
+  const raw = track(Readable.fromWeb(res.body));
+  const input = track(raw.pipe(zlib.createGunzip()));
+  raw.on('error', (err) => input.destroy(err)); // a broken download fails the build
+  return {
+    input,
+    state,
+    stop: () => {
+      try {
+        controller.abort();
+      } catch {
+        /* already finished */
+      }
+    },
+  };
 }
 
 async function main() {
-  const input = await openSource(process.argv[2]);
+  const { input, state, stop } = await openSource(process.argv[2]);
   fs.mkdirSync(DATA_DIR, { recursive: true });
 
   const rl = readline.createInterface({ input, crlfDelay: Infinity });
@@ -72,7 +100,11 @@ async function main() {
     words.push(word);
     if (words.length >= MAX_WORDS) break;
   }
+  // Stop reading the rest of the file; errors from here on are expected.
+  state.finished = true;
+  if (state.error) throw new Error(`Reading the model failed: ${state.error.message}`);
   rl.close();
+  stop();
   input.destroy();
 
   if (!words.length) throw new Error('No vectors parsed — is this a GloVe file?');
@@ -87,7 +119,9 @@ async function main() {
   console.log(`Done: ${words.length} words × ${dims} dims written to ${DATA_DIR}`);
 }
 
-main().catch((err) => {
+main()
+  .then(() => process.exit(0)) // don't wait for the aborted download to wind down
+  .catch((err) => {
   console.error(`\nModel setup failed: ${err.message}`);
   process.exit(1);
 });
